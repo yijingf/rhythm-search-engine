@@ -7,13 +7,21 @@ import pandas as pd
 from scipy.fft import fft
 
 
+def get_onset_env(y, sr=22050):
+    D = np.abs(librosa.feature.melspectrogram(y=y, sr=sr))
+    onset_env = librosa.onset.onset_strength(S=librosa.core.power_to_db(D),
+                                             sr=sr)
+    return onset_env
+
+
 def periodicity_spectrum(y=None, onset_env=None, sr=22050, max_bpm=1000, min_bpm=10):
 
     if onset_env is None:
-        D = np.abs(librosa.feature.melspectrogram(y=y, sr=sr))
-        onset_env = librosa.onset.onset_strength(S=librosa.core.power_to_db(D),
-                                                 sr=sr)
-    t_frame = librosa.times_like(onset_env, sr=sr)[-1]
+        onset_env = get_onset_env(y, sr)
+
+    # len(onset_env) should be equivalent to np.floor((len(y)-1)/hop_size) + 1
+    # librosa.times_like is equivalent to np.arange(len(onset_env))*hop_size/sr
+    t_frame = librosa.times_like(len(onset_env), sr=sr)[-1]
     frame_len = len(onset_env)
 
     spectrum = np.abs(fft(onset_env))
